@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f7f4ee">
+    <title>Баланс справ</title>
+    <link rel="manifest" href="__BASE_PATH__manifest.webmanifest">
+    <link rel="stylesheet" href="__BASE_PATH__styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Local first</p>
+          <h1>Баланс справ</h1>
+        </div>
+        <button class="icon-button" id="installButton" hidden title="Встановити PWA" aria-label="Встановити PWA">
+          <span>+</span>
+        </button>
+      </header>
+
+      <nav class="tabs" aria-label="Розділи">
+        <button class="tab active" data-view="today">Сьогодні</button>
+        <button class="tab" data-view="plan">Завтра</button>
+        <button class="tab" data-view="tasks">База</button>
+        <button class="tab" data-view="history">Історія</button>
+        <button class="tab" data-view="backup">Бекап</button>
+      </nav>
+
+      <main>
+        <section class="view active" id="view-today">
+          <div class="section-head">
+            <div>
+              <h2>Сьогодні</h2>
+              <p id="todayDate" class="muted"></p>
+            </div>
+          </div>
+          <div id="todayList" class="stack"></div>
+          <div id="todayEmpty" class="empty" hidden>На сьогодні нічого не заплановано.</div>
+        </section>
+
+        <section class="view" id="view-plan">
+          <div class="section-head">
+            <div>
+              <h2>Завтра</h2>
+              <p class="muted">Можна вибрати іншу дату, але фокус тут на найближчому плані.</p>
+            </div>
+          </div>
+          <label class="field">
+            <span>Дата</span>
+            <input type="date" id="planDate">
+          </label>
+
+          <div id="planBalance" class="balance-grid plan-balance"></div>
+          <p id="planHint" class="hint"></p>
+
+          <form id="planForm" class="panel">
+            <label class="field">
+              <span>Фільтр по квадранту</span>
+              <select id="planQuadrantFilter"></select>
+            </label>
+            <label class="field">
+              <span>Справа з бази</span>
+              <select id="planTaskSelect" required></select>
+            </label>
+            <button class="primary" type="submit">Додати до дати</button>
+          </form>
+          <div class="subsection-head">
+            <h3>Пропозиції з повторень</h3>
+            <p class="muted">Ці справи не додаються самі. Натисни “Запланувати”, якщо вони доречні для цієї дати.</p>
+          </div>
+          <div id="recurringSuggestions" class="stack"></div>
+          <div id="recurringEmpty" class="empty" hidden>Для цієї дати немає повторюваних пропозицій.</div>
+
+          <div class="subsection-head">
+            <h3>Заплановано</h3>
+          </div>
+          <div id="planList" class="stack"></div>
+          <div id="planEmpty" class="empty" hidden>Для цієї дати ще немає ручного плану.</div>
+        </section>
+
+        <section class="view" id="view-tasks">
+          <div class="section-head">
+            <div>
+              <h2>База</h2>
+              <p class="muted">Справи, з яких складається завтра і повторення.</p>
+            </div>
+          </div>
+
+          <form id="taskForm" class="panel">
+            <input type="hidden" id="taskId">
+            <label class="field">
+              <span>Назва</span>
+              <input id="taskTitle" type="text" required maxlength="80" placeholder="Наприклад: прогулянка без телефону">
+            </label>
+            <label class="field">
+              <span>Дата і час додавання</span>
+              <input id="taskCreatedAt" type="datetime-local" required>
+            </label>
+            <label class="field">
+              <span>Квадрант</span>
+              <select id="taskQuadrant" required></select>
+            </label>
+            <div class="inline-grid">
+              <label class="field">
+                <span>Розмір</span>
+                <select id="taskSize">
+                  <option value="S">Маленька</option>
+                  <option value="M">Середня</option>
+                  <option value="L">Велика</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Повторення</span>
+                <select id="taskRepeat">
+                  <option value="none">Немає</option>
+                  <option value="daily">Щодня</option>
+                  <option value="weekly">Щотижня</option>
+                  <option value="weekdays">У дні тижня</option>
+                  <option value="monthly">Щомісяця</option>
+                </select>
+              </label>
+            </div>
+            <fieldset class="weekday-picker" id="weekdayPicker" hidden>
+              <legend>Дні тижня</legend>
+              <label><input type="checkbox" name="repeatDay" value="1"><span>Пн</span></label>
+              <label><input type="checkbox" name="repeatDay" value="2"><span>Вт</span></label>
+              <label><input type="checkbox" name="repeatDay" value="3"><span>Ср</span></label>
+              <label><input type="checkbox" name="repeatDay" value="4"><span>Чт</span></label>
+              <label><input type="checkbox" name="repeatDay" value="5"><span>Пт</span></label>
+              <label><input type="checkbox" name="repeatDay" value="6"><span>Сб</span></label>
+              <label><input type="checkbox" name="repeatDay" value="0"><span>Нд</span></label>
+            </fieldset>
+            <label class="field">
+              <span>Нотатка</span>
+              <textarea id="taskNote" rows="2" maxlength="220"></textarea>
+            </label>
+            <div class="actions">
+              <button class="primary" type="submit">Зберегти</button>
+              <button class="ghost" type="button" id="resetTaskForm">Очистити</button>
+            </div>
+          </form>
+
+          <div class="panel compact-panel">
+            <label class="field">
+              <span>Фільтр бази</span>
+              <select id="taskFilter"></select>
+            </label>
+            <label class="check-row">
+              <input type="checkbox" id="showPostponed">
+              <span>Показати відкладені</span>
+            </label>
+          </div>
+
+          <div id="taskList" class="stack"></div>
+          <div id="taskEmpty" class="empty" hidden>У цьому фільтрі немає активних справ.</div>
+        </section>
+
+        <section class="view" id="view-history">
+          <div class="section-head">
+            <div>
+              <h2>Історія</h2>
+              <p class="muted">Для огляду, якщо захочеться подивитися ширше.</p>
+            </div>
+          </div>
+          <div class="range-tabs" id="historyRanges">
+            <button class="chip active" data-days="3">3 дні</button>
+            <button class="chip" data-days="7">7 днів</button>
+            <button class="chip" data-days="14">14 днів</button>
+            <button class="chip" data-days="30">30 днів</button>
+          </div>
+          <div id="balanceGrid" class="balance-grid"></div>
+          <div id="historyLog" class="stack"></div>
+        </section>
+
+        <section class="view" id="view-backup">
+          <div class="section-head">
+            <div>
+              <h2>Бекап</h2>
+              <p class="muted">JSON працює повністю локально. Sheets — експорт файлу або TSV для вставки.</p>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="actions wrap">
+              <button class="primary" id="exportJson" type="button">Експорт JSON</button>
+              <label class="file-button">
+                Імпорт JSON
+                <input id="importJson" type="file" accept="application/json">
+              </label>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Google Sheets</h3>
+            <p class="muted">URL застосунку й API ключ зберігаються тільки локально в браузері цього пристрою.</p>
+            <form id="sheetsSettingsForm">
+              <label class="field">
+                <span>URL application</span>
+                <input id="sheetsAppUrl" type="url" inputmode="url" autocomplete="off" placeholder="https://script.google.com/...">
+              </label>
+              <label class="field">
+                <span>API ключ</span>
+                <input id="sheetsApiKey" type="password" autocomplete="off" placeholder="Встав ключ вручну на цьому пристрої">
+              </label>
+              <div class="actions wrap">
+                <button class="primary" type="submit">Зберегти локально</button>
+                <button class="ghost" id="clearSheetsSettings" type="button">Очистити</button>
+              </div>
+            </form>
+            <div class="actions wrap sheets-actions">
+              <button class="primary" id="backupToSheets" type="button">Зберегти backup у Sheets</button>
+              <button class="ghost" id="restoreFromSheets" type="button">Відновити з Sheets</button>
+            </div>
+            <div class="actions wrap">
+              <button class="ghost" id="exportCsv" type="button">Завантажити CSV</button>
+              <button class="ghost" id="copyTsv" type="button">Копіювати TSV</button>
+              <a class="link-button" href="https://sheets.new" target="_blank" rel="noreferrer">Відкрити Sheets</a>
+            </div>
+          </div>
+          <p class="status" id="backupStatus" role="status"></p>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="__BASE_PATH__app.js"></script>
+  </body>
+</html>
