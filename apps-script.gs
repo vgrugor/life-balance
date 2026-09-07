@@ -1,5 +1,6 @@
 const BACKUP_KEY = "change-this-key";
 const SHEET_NAME = "backup";
+const CHUNK_SIZE = 45000;
 
 function doPost(e) {
   try {
@@ -9,15 +10,18 @@ function doPost(e) {
     }
 
     const sheet = getBackupSheet();
+    const json = JSON.stringify(payload.data || {});
+    const chunks = chunkText(json, CHUNK_SIZE);
     sheet.clear();
-    sheet.getRange(1, 1, 1, 3).setValues([["savedAt", "source", "json"]]);
-    sheet.getRange(2, 1, 1, 3).setValues([[
-      payload.savedAt || new Date().toISOString(),
-      payload.source || "",
-      JSON.stringify(payload.data || {})
-    ]]);
+    sheet.getRange(1, 1, 1, 4).setValues([["savedAt", "source", "part", "json"]]);
+    sheet.getRange(2, 1, chunks.length, 4).setValues(chunks.map((chunk, index) => [
+      index === 0 ? payload.savedAt || new Date().toISOString() : "",
+      index === 0 ? payload.source || "" : "",
+      index + 1,
+      chunk
+    ]));
 
-    return jsonResponse({ ok: true });
+    return jsonResponse({ ok: true, chunks: chunks.length });
   } catch (error) {
     return jsonResponse({ ok: false, error: String(error) });
   }
@@ -31,9 +35,22 @@ function doGet(e) {
 
   try {
     const sheet = getBackupSheet();
-    const savedAt = sheet.getRange(2, 1).getValue();
-    const source = sheet.getRange(2, 2).getValue();
-    const json = sheet.getRange(2, 3).getValue();
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) {
+      return jsonpResponse(callback, { ok: false, error: "Backup not found" });
+    }
+
+    const rows = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
+    const savedAt = rows[0][0];
+    const source = rows[0][1];
+    const hasChunkedBackup = rows.some((row) => row[3]);
+    const json = hasChunkedBackup
+      ? rows
+        .filter((row) => row[3])
+        .sort((a, b) => Number(a[2]) - Number(b[2]))
+        .map((row) => row[3])
+        .join("")
+      : rows[0][2];
 
     if (!json) {
       return jsonpResponse(callback, { ok: false, error: "Backup not found" });
@@ -62,7 +79,16 @@ function jsonResponse(payload) {
 }
 
 function jsonpResponse(callback, payload) {
+  const safeCallback = String(callback).match(/^[A-Za-z_$][0-9A-Za-z_$]*$/) ? callback : "callback";
   return ContentService
-    .createTextOutput(callback + "(" + JSON.stringify(payload) + ");")
+    .createTextOutput(safeCallback + "(" + JSON.stringify(payload) + ");")
     .setMimeType(ContentService.MimeType.JAVASCRIPT);
+}
+
+function chunkText(text, size) {
+  const chunks = [];
+  for (let index = 0; index < text.length; index += size) {
+    chunks.push(text.slice(index, index + size));
+  }
+  return chunks.length ? chunks : [""];
 }
