@@ -722,8 +722,9 @@ async function importJson(file) {
 }
 
 async function getSheetsSettingsFromForm() {
-  const url = $('#sheetsAppUrl').value.trim();
+  const url = normalizeSheetsUrl($('#sheetsAppUrl').value.trim());
   const key = $('#sheetsApiKey').value.trim();
+  $('#sheetsAppUrl').value = url;
   await Promise.all([
     putSetting('sheetsAppUrl', url),
     putSetting('sheetsApiKey', key)
@@ -731,10 +732,14 @@ async function getSheetsSettingsFromForm() {
   return { url, key };
 }
 
+function normalizeSheetsUrl(url) {
+  return url.replace(/\?.*$/, '').trim();
+}
+
 async function backupToSheets() {
   const { url, key } = await getSheetsSettingsFromForm();
   if (!url || !key) {
-    setStatus('Вкажи URL application і API ключ.');
+    setStatus('Вкажи URL application і API ключ.', true);
     return;
   }
 
@@ -753,9 +758,9 @@ async function backupToSheets() {
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload)
     });
-    setStatus('Backup відправлено. Apps Script збереже його в Google Sheets.');
+    setStatus('Backup відправлено. Через обмеження браузера відповідь Apps Script не читається, але restore покаже, чи backup збережений.', true);
   } catch (error) {
-    setStatus('Не вдалося відправити backup. Перевір інтернет і URL application.');
+    setStatus(`Не вдалося відправити backup: ${error.message}.`, true);
   }
 }
 
@@ -780,7 +785,7 @@ function fetchSheetsBackupJsonp(url, key) {
     };
 
     const separator = url.includes('?') ? '&' : '?';
-    script.src = `${url}${separator}key=${encodeURIComponent(key)}&callback=${encodeURIComponent(callbackName)}`;
+    script.src = `${url}${separator}key=${encodeURIComponent(key)}&callback=${encodeURIComponent(callbackName)}&t=${Date.now()}`;
     script.onerror = () => {
       cleanup();
       reject(new Error('Script load failed'));
@@ -792,7 +797,7 @@ function fetchSheetsBackupJsonp(url, key) {
 async function restoreFromSheets() {
   const { url, key } = await getSheetsSettingsFromForm();
   if (!url || !key) {
-    setStatus('Вкажи URL application і API ключ.');
+    setStatus('Вкажи URL application і API ключ.', true);
     return;
   }
   if (!confirm('Відновити дані з Google Sheets? Поточні локальні справи, плани та історію буде замінено backup-версією.')) return;
@@ -804,9 +809,30 @@ async function restoreFromSheets() {
       throw new Error(payload?.error || 'Backup not found');
     }
     await importBackupPayload(payload.data);
-    setStatus(`Відновлено backup від ${payload.savedAt || 'невідомої дати'}.`);
+    setStatus(`Відновлено backup від ${payload.savedAt || 'невідомої дати'}.`, true);
   } catch (error) {
-    setStatus('Не вдалося відновити backup. Перевір URL, ключ і наявність backup у таблиці.');
+    setStatus(`Не вдалося відновити backup: ${error.message}. Перевір URL, ключ і чи вже був зроблений backup у Sheets.`, true);
+  }
+}
+
+async function testSheetsConnection() {
+  const { url, key } = await getSheetsSettingsFromForm();
+  if (!url || !key) {
+    setStatus('Вкажи URL application і API ключ.', true);
+    return;
+  }
+  setStatus('Перевіряю Google Sheets backup...');
+  try {
+    const payload = await fetchSheetsBackupJsonp(url, key);
+    if (!payload?.ok) throw new Error(payload?.error || 'Endpoint returned an empty response');
+    const counts = payload.data ? [
+      `${payload.data.tasks?.length || 0} справ`,
+      `${payload.data.plans?.length || 0} планів`,
+      `${payload.data.logs?.length || 0} записів історії`
+    ].join(', ') : 'без даних';
+    setStatus(`Підключення працює. Backup від ${payload.savedAt || 'невідомої дати'}: ${counts}.`, true);
+  } catch (error) {
+    setStatus(`Перевірка не пройшла: ${error.message}.`, true);
   }
 }
 
@@ -851,8 +877,9 @@ function download(name, content, type) {
   URL.revokeObjectURL(url);
 }
 
-function setStatus(message) {
+function setStatus(message, sticky = false) {
   $('#backupStatus').textContent = message;
+  if (sticky) return;
   window.setTimeout(() => {
     if ($('#backupStatus').textContent === message) $('#backupStatus').textContent = '';
   }, 3500);
@@ -992,6 +1019,7 @@ function bindEvents() {
   $('#copyTsv').addEventListener('click', () => copyTsv().catch(() => setStatus('Не вдалося скопіювати TSV.')));
   $('#backupToSheets').addEventListener('click', backupToSheets);
   $('#restoreFromSheets').addEventListener('click', restoreFromSheets);
+  $('#testSheetsConnection').addEventListener('click', testSheetsConnection);
   window.addEventListener('beforeinstallprompt', (event) => {
     event.preventDefault();
     deferredInstallPrompt = event;
