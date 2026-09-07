@@ -79,9 +79,13 @@ URL application та API ключ можна ввести на вкладці `�
 3. Встав код з `apps-script.gs`.
 4. Заміни `BACKUP_KEY = "change-this-key"` на свій довгий випадковий ключ.
 5. Обери `Deploy -> New deployment -> Web app`.
-6. `Execute as`: себе. `Who has access`: anyone with the link.
-7. Скопіюй Web App URL.
+6. `Execute as`: себе. `Who has access`: `Anyone` або `Anyone with the link`, залежно від інтерфейсу Google.
+7. Скопіюй саме Web App URL. Він має починатися з `https://script.google.com/macros/s/` і закінчуватися на `/exec`.
 8. На телефоні у вкладці `Бекап` введи Web App URL у `URL application`, а ключ у `API ключ`.
+
+Після будь-якої зміни `apps-script.gs` відкрий `Deploy -> Manage deployments -> Edit`, обери `New version` і натисни `Deploy`. Якщо цього не зробити, телефон продовжить звертатися до старої версії Apps Script.
+
+Якщо таблиця лишається порожньою після `Зберегти backup у Sheets`, значить Web App не виконує `doPost`: перевір `/exec` URL, доступ `Anyone`, правильний Google акаунт власника таблиці та нову версію deployment.
 
 Кнопка `Зберегти backup у Sheets` записує повний JSON backup у вкладку `backup`. Кнопка `Відновити з Sheets` завантажує останній backup і замінює локальні дані.
 
