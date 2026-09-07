@@ -58,6 +58,8 @@ BASE_PATH=/repo-name/ npm run build
 
 ## Деплой на GitHub Pages
 
+Pages URL: https://vgrugor.github.io/life-balance/
+
 1. У репозиторії відкрий `Settings -> Pages`.
 2. У `Build and deployment` вибери `GitHub Actions`.
 3. Запуш зміни в гілку `main` або `master`.
