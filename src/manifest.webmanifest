@@ -1,0 +1,19 @@
+{
+  "name": "Баланс справ",
+  "short_name": "Баланс",
+  "description": "Local-first PWA для відстеження балансу справ між чотирма квадрантами.",
+  "lang": "uk",
+  "start_url": "__BASE_PATH__",
+  "scope": "__BASE_PATH__",
+  "display": "standalone",
+  "background_color": "#f7f4ee",
+  "theme_color": "#f7f4ee",
+  "icons": [
+    {
+      "src": "__BASE_PATH__icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
