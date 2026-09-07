@@ -60,7 +60,7 @@ BASE_PATH=/repo-name/ npm run build
 
 1. У репозиторії відкрий `Settings -> Pages`.
 2. У `Build and deployment` вибери `GitHub Actions`.
-3. Запуш зміни в гілку `main`.
+3. Запуш зміни в гілку `main` або `master`.
 
 Workflow `.github/workflows/pages.yml` сам збере `dist/` і опублікує Pages. Base path підставляється як `/${repository-name}/`, тому застосунок працює в project pages.
 
