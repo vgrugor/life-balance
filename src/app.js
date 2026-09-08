@@ -28,6 +28,7 @@ const state = {
   logs: [],
   currentView: 'today',
   historyDays: 7,
+  historyFilter: 'all',
   taskFilter: 'all',
   planFilter: 'all',
   showPostponed: false
@@ -550,18 +551,24 @@ function renderOccurrenceList(listSelector, emptySelector, items, dateISO, plann
 function renderHistory() {
   $$('#historyRanges .chip').forEach((button) => button.classList.toggle('active', Number(button.dataset.days) === state.historyDays));
   const logs = logsForLast(state.historyDays);
+  const visibleLogs = state.historyFilter === 'all'
+    ? logs
+    : logs.filter((log) => log.quadrant === state.historyFilter);
   const balance = computeBalanceFromRows(logs);
   $('#balanceGrid').innerHTML = balance.map((item) => `
-    <div class="balance-row">
+    <button class="balance-row balance-button ${state.historyFilter === item.id ? 'active' : ''}" type="button" data-history-filter="${item.id}">
       <div class="balance-top">
         <span>${item.label}</span>
         <span>${item.percent}%</span>
       </div>
       <div class="bar"><span style="--value: ${item.percent}%; background: ${item.color}"></span></div>
       <div class="muted">${item.value} ваги</div>
-    </div>
+    </button>
   `).join('');
-  $('#historyLog').innerHTML = logs.length ? logs.map((log) => {
+  $('#historyFilterHint').textContent = state.historyFilter === 'all'
+    ? 'Показані всі виконані справи за вибраний період.'
+    : `Фільтр: ${quadrantById(state.historyFilter).label}. Натисни цей квадрант ще раз, щоб показати все.`;
+  $('#historyLog').innerHTML = visibleLogs.length ? visibleLogs.map((log) => {
     const quadrant = quadrantById(log.quadrant);
     return `
       <article class="card">
@@ -574,7 +581,7 @@ function renderHistory() {
         </div>
       </article>
     `;
-  }).join('') : '<div class="empty">За цей період ще немає відмічених справ.</div>';
+  }).join('') : '<div class="empty">За цим фільтром немає відмічених справ.</div>';
 }
 
 function renderAll() {
@@ -925,6 +932,12 @@ function bindEvents() {
     const button = event.target.closest('[data-days]');
     if (!button) return;
     state.historyDays = Number(button.dataset.days);
+    renderHistory();
+  });
+  $('#balanceGrid').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-history-filter]');
+    if (!button) return;
+    state.historyFilter = state.historyFilter === button.dataset.historyFilter ? 'all' : button.dataset.historyFilter;
     renderHistory();
   });
   document.body.addEventListener('click', async (event) => {

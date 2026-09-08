@@ -697,6 +697,12 @@ textarea:focus {
   outline: none;
 }
 
+.balance-button.active {
+  border-color: var(--accent);
+  background: #e6f0ed;
+  box-shadow: 0 0 0 3px rgba(35, 108, 98, 0.14);
+}
+
 .plan-balance {
   margin-bottom: 10px;
 }
