@@ -432,6 +432,11 @@ textarea:focus {
   padding: 13px;
 }
 
+.card.is-recently-saved {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(181, 95, 77, 0.18), var(--shadow);
+}
+
 .card.is-postponed {
   opacity: 0.72;
 }
@@ -617,6 +622,14 @@ textarea:focus {
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
+}
+
+.form-status {
+  min-height: 20px;
+  margin: 2px 0 0;
+  color: var(--accent-strong);
+  font-size: 0.9rem;
+  font-weight: 800;
 }
 
 .small-button {
