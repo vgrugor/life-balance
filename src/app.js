@@ -32,7 +32,7 @@ const state = {
   taskFilter: 'all',
   planFilter: 'all',
   showPostponed: false,
-  showCompletedSingles: false
+  hideCompletedSingles: true
 };
 
 let db;
@@ -322,7 +322,7 @@ function renderTaskSelect() {
 function renderTasks() {
   const filtered = state.tasks.filter((task) => {
     if (!state.showPostponed && isPostponed(task)) return false;
-    if (!state.showCompletedSingles && isCompletedSingle(task)) return false;
+    if (state.hideCompletedSingles && isCompletedSingle(task)) return false;
     return state.taskFilter === 'all' || task.quadrant === state.taskFilter;
   });
   $('#taskEmpty').hidden = filtered.length > 0;
@@ -933,8 +933,8 @@ function bindEvents() {
     state.showPostponed = event.target.checked;
     renderTasks();
   });
-  $('#showCompletedSingles').addEventListener('change', (event) => {
-    state.showCompletedSingles = event.target.checked;
+  $('#hideCompletedSingles').addEventListener('change', (event) => {
+    state.hideCompletedSingles = event.target.checked;
     renderTasks();
   });
   $('#planForm').addEventListener('submit', addPlan);

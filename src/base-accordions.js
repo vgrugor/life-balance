@@ -48,6 +48,14 @@ function isPostponed(task) {
   return task.hiddenUntil && task.hiddenUntil > todayISO();
 }
 
+function hasCompletion(logs, taskId) {
+  return logs.some((log) => log.taskId === taskId);
+}
+
+function isCompletedSingle(task, logs) {
+  return task.repeat === 'none' && hasCompletion(logs, task.id);
+}
+
 function quadrantById(id) {
   return QUADRANTS.find((quadrant) => quadrant.id === id) || QUADRANTS[0];
 }
@@ -84,11 +92,12 @@ function escapeHtml(value) {
   })[char]);
 }
 
-function renderTaskCard(task) {
+function renderTaskCard(task, logs) {
   const quadrant = quadrantById(task.quadrant);
   const postponed = isPostponed(task);
+  const completedSingle = isCompletedSingle(task, logs);
   return `
-    <article class="card ${postponed ? 'is-postponed' : ''} ${task.id === lastSavedTaskId ? 'is-recently-saved' : ''}">
+    <article class="card ${postponed ? 'is-postponed' : ''} ${completedSingle ? 'is-completed-single' : ''} ${task.id === lastSavedTaskId ? 'is-recently-saved' : ''}">
       <div class="card-head">
         <div>
           <p class="title">${escapeHtml(task.title)}</p>
@@ -96,6 +105,7 @@ function renderTaskCard(task) {
             <span class="badge ${quadrant.id}">${quadrant.label}</span>
             <span class="badge">${SIZE_LABELS[task.size]}</span>
             <span class="badge">${repeatLabel(task)}</span>
+            ${completedSingle ? '<span class="badge done-badge">виконано</span>' : ''}
             <span class="badge">додано ${formatDateTime(task.createdAt)}</span>
             ${postponed ? `<span class="badge">пізніше до ${formatDate(task.hiddenUntil)}</span>` : ''}
           </div>
@@ -117,11 +127,17 @@ async function renderBaseAccordions() {
   if (!list || list.querySelector('.quadrant-accordion')) return;
 
   const db = await openDb();
-  const tasks = (await getAll(db, 'tasks')).sort((a, b) => a.title.localeCompare(b.title, 'uk'));
+  const [tasks, logs] = await Promise.all([getAll(db, 'tasks'), getAll(db, 'logs')]);
   db.close();
+  tasks.sort((a, b) => a.title.localeCompare(b.title, 'uk'));
 
   const showPostponed = $('#showPostponed')?.checked || false;
-  const visibleTasks = tasks.filter((task) => showPostponed || !isPostponed(task));
+  const hideCompletedSingles = $('#hideCompletedSingles')?.checked ?? true;
+  const visibleTasks = tasks.filter((task) => {
+    if (!showPostponed && isPostponed(task)) return false;
+    if (hideCompletedSingles && isCompletedSingle(task, logs)) return false;
+    return true;
+  });
   const empty = $('#taskEmpty');
   if (empty) {
     empty.hidden = visibleTasks.length > 0;
@@ -141,7 +157,7 @@ async function renderBaseAccordions() {
         </summary>
         <div class="stack">
           ${quadrantTasks.length
-            ? quadrantTasks.map(renderTaskCard).join('')
+            ? quadrantTasks.map((task) => renderTaskCard(task, logs)).join('')
             : '<div class="empty compact-empty">У цьому квадранті немає активних справ.</div>'}
         </div>
       </details>
@@ -192,6 +208,12 @@ function initBaseAccordions() {
   observeTaskList();
 
   $('#showPostponed')?.addEventListener('change', () => {
+    const list = $('#taskList');
+    if (list) list.innerHTML = '';
+    renderBaseAccordions();
+  });
+
+  $('#hideCompletedSingles')?.addEventListener('change', () => {
     const list = $('#taskList');
     if (list) list.innerHTML = '';
     renderBaseAccordions();
