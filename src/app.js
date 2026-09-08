@@ -430,7 +430,7 @@ function renderTodayList(items, dateISO) {
       return new Date(first?.completedAt || first?.createdAt || 0) - new Date(second?.completedAt || second?.createdAt || 0);
     });
     return `
-      <details class="quadrant-accordion ${quadrant.id}" ${quadrantItems.length ? 'open' : ''}>
+      <details class="quadrant-accordion ${quadrant.id}" ${activeItems.length ? 'open' : ''}>
         <summary class="quadrant-head">
           <span class="quadrant-dot" style="background: ${quadrant.color}"></span>
           <h3>${quadrant.label}</h3>
