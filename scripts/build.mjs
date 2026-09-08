@@ -12,7 +12,7 @@ const version = new Date().toISOString();
 await rm(dist, { recursive: true, force: true });
 await mkdir(dist, { recursive: true });
 
-for (const file of ['index.html', 'styles.css', 'app.js', 'manifest.webmanifest', 'sw.js']) {
+for (const file of ['index.html', 'styles.css', 'app.js', 'sheets-guard.js', 'base-accordions.js', 'manifest.webmanifest', 'sw.js']) {
   const input = await readFile(path.join(src, file), 'utf8');
   const output = input
     .replaceAll('__BASE_PATH__', normalizedBase)
