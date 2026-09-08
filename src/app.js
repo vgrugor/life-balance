@@ -32,7 +32,8 @@ const state = {
   taskFilter: 'all',
   planFilter: 'all',
   showPostponed: false,
-  hideCompletedSingles: true
+  hideCompletedSingles: true,
+  taskSearch: ''
 };
 
 let db;
@@ -324,6 +325,7 @@ function renderTasks() {
   const filtered = state.tasks.filter((task) => {
     if (!state.showPostponed && isPostponed(task)) return false;
     if (state.hideCompletedSingles && isCompletedSingle(task)) return false;
+    if (state.taskSearch && !task.title.toLocaleLowerCase('uk').includes(state.taskSearch)) return false;
     return state.taskFilter === 'all' || task.quadrant === state.taskFilter;
   });
   $('#taskEmpty').hidden = filtered.length > 0;
@@ -957,6 +959,10 @@ function bindEvents() {
   });
   $('#hideCompletedSingles').addEventListener('change', (event) => {
     state.hideCompletedSingles = event.target.checked;
+    renderTasks();
+  });
+  $('#taskSearch').addEventListener('input', (event) => {
+    state.taskSearch = event.target.value.trim().toLocaleLowerCase('uk');
     renderTasks();
   });
   $('#planForm').addEventListener('submit', addPlan);

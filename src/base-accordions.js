@@ -133,9 +133,11 @@ async function renderBaseAccordions() {
 
   const showPostponed = $('#showPostponed')?.checked || false;
   const hideCompletedSingles = $('#hideCompletedSingles')?.checked ?? true;
+  const search = ($('#taskSearch')?.value || '').trim().toLocaleLowerCase('uk');
   const visibleTasks = tasks.filter((task) => {
     if (!showPostponed && isPostponed(task)) return false;
     if (hideCompletedSingles && isCompletedSingle(task, logs)) return false;
+    if (search && !task.title.toLocaleLowerCase('uk').includes(search)) return false;
     return true;
   });
   const empty = $('#taskEmpty');
@@ -214,6 +216,12 @@ function initBaseAccordions() {
   });
 
   $('#hideCompletedSingles')?.addEventListener('change', () => {
+    const list = $('#taskList');
+    if (list) list.innerHTML = '';
+    renderBaseAccordions();
+  });
+
+  $('#taskSearch')?.addEventListener('input', () => {
     const list = $('#taskList');
     if (list) list.innerHTML = '';
     renderBaseAccordions();
