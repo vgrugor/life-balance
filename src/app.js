@@ -31,7 +31,8 @@ const state = {
   historyFilter: 'all',
   taskFilter: 'all',
   planFilter: 'all',
-  showPostponed: false
+  showPostponed: false,
+  showCompletedSingles: false
 };
 
 let db;
@@ -219,6 +220,14 @@ function logFor(taskId, dateISO) {
   return state.logs.find((log) => log.taskId === taskId && log.date === dateISO);
 }
 
+function hasCompletion(taskId) {
+  return state.logs.some((log) => log.taskId === taskId);
+}
+
+function isCompletedSingle(task) {
+  return task.repeat === 'none' && hasCompletion(task.id);
+}
+
 function planOrder(item) {
   return Number.isFinite(item.plan?.order) ? item.plan.order : new Date(item.plan?.createdAt || 0).getTime();
 }
@@ -313,6 +322,7 @@ function renderTaskSelect() {
 function renderTasks() {
   const filtered = state.tasks.filter((task) => {
     if (!state.showPostponed && isPostponed(task)) return false;
+    if (!state.showCompletedSingles && isCompletedSingle(task)) return false;
     return state.taskFilter === 'all' || task.quadrant === state.taskFilter;
   });
   $('#taskEmpty').hidden = filtered.length > 0;
@@ -322,8 +332,9 @@ function renderTasks() {
 function renderTaskCard(task) {
   const quadrant = quadrantById(task.quadrant);
   const postponed = isPostponed(task);
+  const completedSingle = isCompletedSingle(task);
   return `
-    <article class="card ${postponed ? 'is-postponed' : ''}">
+    <article class="card ${postponed ? 'is-postponed' : ''} ${completedSingle ? 'is-completed-single' : ''}">
       <div class="card-head">
         <div>
           <p class="title">${escapeHtml(task.title)}</p>
@@ -331,6 +342,7 @@ function renderTaskCard(task) {
             <span class="badge ${quadrant.id}">${quadrant.label}</span>
             <span class="badge">${SIZE_LABELS[task.size]}</span>
             <span class="badge">${repeatLabel(task)}</span>
+            ${completedSingle ? '<span class="badge done-badge">виконано</span>' : ''}
             <span class="badge">додано ${formatDateTime(task.createdAt)}</span>
             ${postponed ? `<span class="badge">пізніше до ${formatDate(task.hiddenUntil)}</span>` : ''}
           </div>
@@ -919,6 +931,10 @@ function bindEvents() {
   });
   $('#showPostponed').addEventListener('change', (event) => {
     state.showPostponed = event.target.checked;
+    renderTasks();
+  });
+  $('#showCompletedSingles').addEventListener('change', (event) => {
+    state.showCompletedSingles = event.target.checked;
     renderTasks();
   });
   $('#planForm').addEventListener('submit', addPlan);

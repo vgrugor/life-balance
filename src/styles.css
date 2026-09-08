@@ -173,6 +173,8 @@ button,
 }
 
 .compact-panel {
+  display: grid;
+  gap: 10px;
   box-shadow: none;
 }
 
@@ -439,6 +441,16 @@ textarea:focus {
 
 .card.is-postponed {
   opacity: 0.72;
+}
+
+.card.is-completed-single {
+  border-color: #d8d0c3;
+  background: rgba(248, 246, 241, 0.86);
+}
+
+.card.is-completed-single .title {
+  color: var(--muted);
+  text-decoration: line-through;
 }
 
 .suggestion-card {
