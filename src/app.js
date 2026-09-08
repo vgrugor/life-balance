@@ -615,6 +615,11 @@ async function saveTask(event) {
   const repeatDays = repeat === 'weekdays' && !selectedRepeatDays().length
     ? [new Date().getDay()]
     : selectedRepeatDays();
+  const hiddenUntil = $('#taskPostponed').checked
+    ? existing?.hiddenUntil && existing.hiddenUntil > todayISO()
+      ? existing.hiddenUntil
+      : addDaysISO(todayISO(), 30)
+    : '';
   const task = {
     ...existing,
     id: existingId || uid('task'),
@@ -625,6 +630,7 @@ async function saveTask(event) {
     repeatDays,
     note: $('#taskNote').value.trim(),
     createdAt: dateTimeLocalToISO($('#taskCreatedAt').value),
+    hiddenUntil,
     updatedAt: now
   };
   await put('tasks', task);
@@ -636,6 +642,7 @@ function resetTaskForm() {
   $('#taskForm').reset();
   $('#taskId').value = '';
   $('#taskCreatedAt').value = toDateTimeLocalValue();
+  $('#taskPostponed').checked = false;
   updateWeekdayPicker();
 }
 
@@ -990,6 +997,7 @@ function bindEvents() {
       $('#taskId').value = task.id;
       $('#taskTitle').value = task.title;
       $('#taskCreatedAt').value = toDateTimeLocalValue(task.createdAt);
+      $('#taskPostponed').checked = isPostponed(task);
       $('#taskQuadrant').value = task.quadrant;
       $('#taskSize').value = task.size;
       $('#taskRepeat').value = task.repeat;
