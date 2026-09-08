@@ -307,6 +307,7 @@ function renderTaskSelect() {
   const date = $('#planDate').value;
   const tasks = state.tasks.filter((task) => {
     if (isPostponed(task)) return false;
+    if (isCompletedSingle(task)) return false;
     if (state.planFilter !== 'all' && task.quadrant !== state.planFilter) return false;
     return !state.plans.some((plan) => plan.taskId === task.id && plan.date === date);
   });
