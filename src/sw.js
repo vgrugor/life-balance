@@ -6,6 +6,7 @@ const ASSETS = [
   `${BASE_PATH}styles.css`,
   `${BASE_PATH}app.js`,
   `${BASE_PATH}sheets-guard.js`,
+  `${BASE_PATH}base-accordions.js`,
   `${BASE_PATH}manifest.webmanifest`,
   `${BASE_PATH}icons/icon.svg`
 ];
