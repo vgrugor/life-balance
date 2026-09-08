@@ -140,13 +140,11 @@
               <button class="primary" type="submit">Зберегти</button>
               <button class="ghost" type="button" id="resetTaskForm">Очистити</button>
             </div>
+            <p class="form-status" id="taskFormStatus" role="status" aria-live="polite"></p>
           </form>
 
           <div class="panel compact-panel">
-            <label class="field">
-              <span>Фільтр бази</span>
-              <select id="taskFilter"></select>
-            </label>
+            <select id="taskFilter" hidden aria-hidden="true"></select>
             <label class="check-row">
               <input type="checkbox" id="showPostponed">
               <span>Показати відкладені</span>
@@ -154,7 +152,7 @@
           </div>
 
           <div id="taskList" class="stack"></div>
-          <div id="taskEmpty" class="empty" hidden>У цьому фільтрі немає активних справ.</div>
+          <div id="taskEmpty" class="empty" hidden>У базі немає активних справ для показу.</div>
         </section>
 
         <section class="view" id="view-history">
@@ -224,5 +222,6 @@
     </div>
     <script type="module" src="__BASE_PATH__app.js"></script>
     <script type="module" src="__BASE_PATH__sheets-guard.js"></script>
+    <script type="module" src="__BASE_PATH__base-accordions.js"></script>
   </body>
 </html>
