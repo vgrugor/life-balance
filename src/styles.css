@@ -559,15 +559,41 @@ textarea:focus {
   color: var(--accent-strong);
 }
 
+.done-accordion {
+  margin-top: 4px;
+}
+
 .done-divider {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 4px 0 -2px;
+  margin: 4px 0 0;
   color: var(--accent-strong);
+  cursor: pointer;
   font-size: 0.78rem;
   font-weight: 900;
+  list-style: none;
   text-transform: uppercase;
+}
+
+.done-divider::-webkit-details-marker {
+  display: none;
+}
+
+.done-divider::before {
+  content: "›";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  font-size: 1rem;
+  transform: rotate(0deg);
+  transition: transform 160ms ease;
+}
+
+.done-accordion[open] .done-divider::before {
+  transform: rotate(90deg);
 }
 
 .done-divider::after {
@@ -575,6 +601,22 @@ textarea:focus {
   flex: 1;
   height: 1px;
   background: rgba(35, 108, 98, 0.22);
+}
+
+.done-divider span:last-child {
+  min-width: 24px;
+  min-height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(35, 108, 98, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 253, 249, 0.7);
+  font-size: 0.72rem;
+}
+
+.done-stack {
+  margin-top: 8px;
 }
 
 .done-badge {

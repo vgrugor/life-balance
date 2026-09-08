@@ -442,13 +442,27 @@ function renderTodayList(items, dateISO) {
                 canMoveUp: index > 0,
                 canMoveDown: index < activeItems.length - 1
               })).join('')}
-              ${doneItems.length ? '<div class="done-divider">Виконані:</div>' : ''}
-              ${doneItems.map((item) => renderTodayCard(item, dateISO)).join('')}`
+              ${renderDoneTodaySection(doneItems, dateISO)}`
             : '<div class="empty compact-empty">На сьогодні тут нічого немає.</div>'}
         </div>
       </details>
     `;
   }).join('');
+}
+
+function renderDoneTodaySection(doneItems, dateISO) {
+  if (!doneItems.length) return '';
+  return `
+    <details class="done-accordion">
+      <summary class="done-divider">
+        <span>Виконані:</span>
+        <span>${doneItems.length}</span>
+      </summary>
+      <div class="stack done-stack">
+        ${doneItems.map((item) => renderTodayCard(item, dateISO)).join('')}
+      </div>
+    </details>
+  `;
 }
 
 function renderTodayCard(item, dateISO, moveState = {}) {
