@@ -27,6 +27,7 @@ const state = {
   plans: [],
   logs: [],
   currentView: 'today',
+  planDays: 14,
   historyDays: 7,
   historyFilter: 'all',
   taskFilter: 'all',
@@ -377,7 +378,8 @@ function renderPlan() {
 }
 
 function renderPlanBalance(dateISO) {
-  const recentRows = logsForLast(14);
+  $$('#planRanges .chip').forEach((button) => button.classList.toggle('active', Number(button.dataset.planDays) === state.planDays));
+  const recentRows = logsForLast(state.planDays);
   const planRows = plannedItemsFor(dateISO).map((item) => item.task);
   const balance = computeBalanceFromRows([...recentRows, ...planRows]);
   const lowest = [...balance].sort((a, b) => a.value - b.value)[0];
@@ -967,6 +969,12 @@ function bindEvents() {
   });
   $('#planForm').addEventListener('submit', addPlan);
   $('#planDate').addEventListener('change', renderAll);
+  $('#planRanges').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-plan-days]');
+    if (!button) return;
+    state.planDays = Number(button.dataset.planDays);
+    renderPlan();
+  });
   $('#planQuadrantFilter').addEventListener('change', (event) => {
     state.planFilter = event.target.value;
     renderPlan();
