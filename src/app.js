@@ -27,6 +27,7 @@ const state = {
   plans: [],
   logs: [],
   currentView: 'today',
+  todayDate: todayISO(),
   planDays: 14,
   historyDays: 7,
   historyFilter: 'all',
@@ -364,8 +365,9 @@ function renderTaskCard(task) {
 }
 
 function renderToday() {
-  const date = todayISO();
-  $('#todayDate').textContent = formatDate(date);
+  const date = state.todayDate || todayISO();
+  $('#todayDatePicker').value = date;
+  $('#todayDate').textContent = date === todayISO() ? `Сьогодні, ${formatDate(date)}` : formatDate(date);
   renderTodayList(plannedItemsFor(date), date);
 }
 
@@ -967,6 +969,10 @@ function bindEvents() {
     state.taskSearch = event.target.value.trim().toLocaleLowerCase('uk');
     renderTasks();
   });
+  $('#todayDatePicker').addEventListener('change', (event) => {
+    state.todayDate = event.target.value || todayISO();
+    renderToday();
+  });
   $('#planForm').addEventListener('submit', addPlan);
   $('#planDate').addEventListener('change', renderAll);
   $('#planRanges').addEventListener('click', (event) => {
@@ -1107,6 +1113,7 @@ async function registerServiceWorker() {
 
 async function init() {
   renderQuadrantOptions();
+  $('#todayDatePicker').value = state.todayDate;
   $('#planDate').value = tomorrowISO();
   $('#taskCreatedAt').value = toDateTimeLocalValue();
   bindEvents();
