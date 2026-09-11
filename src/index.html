@@ -76,12 +76,18 @@
             </label>
             <button class="primary" type="submit">Додати до дати</button>
           </form>
-          <div class="subsection-head">
-            <h3>Пропозиції з повторень</h3>
-            <p class="muted">Ці справи не додаються самі. Натисни “Запланувати”, якщо вони доречні для цієї дати.</p>
-          </div>
-          <div id="recurringSuggestions" class="stack"></div>
-          <div id="recurringEmpty" class="empty" hidden>Для цієї дати немає повторюваних пропозицій.</div>
+          <details class="suggestions-accordion">
+            <summary class="suggestions-head">
+              <div>
+                <h3>Пропозиції з повторень</h3>
+                <p class="muted">Ці справи не додаються самі. Натисни “Запланувати”, якщо вони доречні для цієї дати.</p>
+              </div>
+            </summary>
+            <div class="suggestions-body">
+              <div id="recurringSuggestions" class="stack"></div>
+              <div id="recurringEmpty" class="empty" hidden>Для цієї дати немає повторюваних пропозицій.</div>
+            </div>
+          </details>
 
           <div class="subsection-head">
             <h3>Заплановано</h3>
