@@ -273,13 +273,9 @@ function ensureCreatedAtDefault() {
 }
 
 function logsForLast(days) {
-  const end = new Date(`${todayISO()}T23:59:59`);
-  const start = new Date(end);
-  start.setDate(start.getDate() - days + 1);
-  return state.logs.filter((log) => {
-    const date = new Date(`${log.date}T12:00:00`);
-    return date >= start && date <= end;
-  });
+  const end = todayISO();
+  const start = addDaysISO(end, -days + 1);
+  return state.logs.filter((log) => log.date >= start && log.date <= end);
 }
 
 function computeBalanceFromRows(rows) {
