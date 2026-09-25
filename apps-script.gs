@@ -4,7 +4,7 @@ const CHUNK_SIZE = 45000;
 
 function doPost(e) {
   try {
-    const payload = JSON.parse(e.postData.contents || "{}");
+    const payload = JSON.parse((e.parameter && e.parameter.payload) || e.postData.contents || "{}");
     if (payload.key !== BACKUP_KEY) {
       return jsonResponse({ ok: false, error: "Invalid key" });
     }

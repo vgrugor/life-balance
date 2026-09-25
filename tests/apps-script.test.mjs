@@ -96,3 +96,16 @@ test('Apps Script rejects a wrong key without overwriting an existing backup', (
   assert.deepEqual(get(harness, 'wrong-key'), { ok: false, error: 'Invalid key' });
   assert.deepEqual(get(harness, 'change-this-key').data, data);
 });
+
+test('Apps Script accepts a backup submitted by an HTML form', () => {
+  const harness = createHarness();
+  const data = { tasks: [{ id: 'form-task' }], plans: [], logs: [] };
+  const payload = { key: 'change-this-key', savedAt: '2026-09-25T12:00:00.000Z', data };
+  const result = harness.doPost({
+    parameter: { payload: JSON.stringify(payload) },
+    postData: { contents: `payload=${encodeURIComponent(JSON.stringify(payload))}` }
+  });
+
+  assert.deepEqual(JSON.parse(result.text), { ok: true, chunks: 1 });
+  assert.deepEqual(get(harness, 'change-this-key').data, data);
+});

@@ -26,6 +26,43 @@ function wait(ms) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
+function submitSheetsBackupForm(url, payload) {
+  return new Promise((resolve, reject) => {
+    const frame = document.createElement('iframe');
+    const form = document.createElement('form');
+    const field = document.createElement('textarea');
+    frame.name = `sheetsBackup_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    frame.hidden = true;
+    form.hidden = true;
+    form.method = 'POST';
+    form.action = url;
+    form.target = frame.name;
+    field.name = 'payload';
+    field.value = JSON.stringify(payload);
+    form.appendChild(field);
+
+    const timeout = window.setTimeout(() => finish(new Error('Timeout')), 20000);
+    function finish(error) {
+      window.clearTimeout(timeout);
+      form.remove();
+      frame.remove();
+      if (error) reject(error);
+      else resolve();
+    }
+    frame.addEventListener('load', () => {
+      try {
+        if (frame.contentWindow.location.href === 'about:blank') return;
+      } catch {
+        // A cross-origin response means the form navigation has completed.
+      }
+      finish();
+    });
+    frame.addEventListener('error', () => finish(new Error('Form load failed')), { once: true });
+    document.body.append(frame, form);
+    form.submit();
+  });
+}
+
 function openDb() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -168,8 +205,15 @@ async function backupToSheets() {
 
   setStatus('Запит відправлено. Перевіряю, чи backup справді збережений...');
   await wait(1500);
-  const saved = await fetchSheetsBackupJsonp(url, key);
-  if (!saved?.ok || !saved.data) throw new Error(saved?.error || 'Backup не знайдено після запису');
+  let saved = await fetchSheetsBackupJsonp(url, key);
+  if (!saved?.ok || !saved.data || saved.savedAt !== exportedAt) {
+    setStatus('Перший запис не підтверджено. Повторюю через форму...');
+    await submitSheetsBackupForm(url, payload);
+    saved = await fetchSheetsBackupJsonp(url, key);
+  }
+  if (!saved?.ok || !saved.data) {
+    throw new Error(`${saved?.error || 'Backup не знайдено після запису'}. Запис не підтверджено: перевір doPost у Apps Script, журнал Executions та чи опублікована нова версія Web App`);
+  }
   if (saved.savedAt && saved.savedAt !== exportedAt) {
     throw new Error(`Google Sheets показує попередній backup від ${saved.savedAt}`);
   }
@@ -216,6 +260,9 @@ document.addEventListener('click', async (event) => {
   try {
     await actions[button.id]();
   } catch (error) {
-    setStatus(`Google Sheets: ${error.message}. Перевір Web App доступ: Execute as me, Who has access: Anyone, і URL має закінчуватися на /exec.`, true);
+    const hint = button.id === 'backupToSheets' && error.message.includes('Запис не підтверджено')
+      ? ''
+      : ' Перевір Web App доступ: Execute as me, Who has access: Anyone, і URL має закінчуватися на /exec.';
+    setStatus(`Google Sheets: ${error.message}.${hint}`, true);
   }
 }, true);

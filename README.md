@@ -102,6 +102,8 @@ After changing `apps-script.gs`, open `Deploy -> Manage deployments -> Edit`, se
 
 If the sheet remains empty after clicking `Зберегти backup у Sheets` (Save backup to Sheets), the Web App is not running `doPost`. Check the `/exec` URL, `Anyone` access, the Google account that owns the sheet, and whether you deployed a new version.
 
+If saving reports `Backup not found`, the app reached `doGet` with a valid key, but could not confirm the write. The app retries the write through a browser form. For this fallback to work, copy the current `apps-script.gs` into your Apps Script project and deploy a **new version** of the Web App. Then check the Apps Script **Executions** log for `doPost` errors if the message persists.
+
 `Зберегти backup у Sheets` writes a full JSON backup to the `backup` sheet tab. `Відновити з Sheets` (Restore from Sheets) downloads the latest backup and replaces the local data.
 
 CSV/TSV export remains a simple manual way to view the data in a spreadsheet.

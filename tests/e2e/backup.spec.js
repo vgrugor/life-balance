@@ -201,6 +201,30 @@ test('Sheets backup verifies the write and restore replaces local data', async (
   await expect(page.locator('#taskList .card').filter({ hasText: 'Sheets restore' })).toHaveCount(1);
 });
 
+test('Sheets backup retries with a form when the first write is missing', async ({ page }) => {
+  let savedBackup;
+  let posts = 0;
+  await page.route('https://script.google.com/macros/s/**', async (route) => {
+    if (route.request().method() === 'POST') {
+      posts += 1;
+      if (posts === 2) savedBackup = JSON.parse(new URLSearchParams(route.request().postData()).get('payload'));
+      await route.fulfill({ status: 200, body: 'ok' });
+      return;
+    }
+    await replyToJsonp(route, savedBackup
+      ? { ok: true, savedAt: savedBackup.savedAt, data: savedBackup.data }
+      : { ok: false, error: 'Backup not found' });
+  });
+
+  await page.goto('/');
+  await createTask(page, 'Form fallback');
+  await setSheetsSettings(page);
+  await page.locator('#backupToSheets').click();
+  await expect(page.locator('#backupStatus')).toContainText('Backup збережено в Google Sheets');
+  expect(posts).toBe(2);
+  expect(savedBackup.data.tasks).toHaveLength(1);
+});
+
 test('Sheets rejects an invalid key without changing local data', async ({ page }) => {
   await page.route('https://script.google.com/macros/s/**', (route) =>
     replyToJsonp(route, { ok: false, error: 'Invalid key' }));
