@@ -142,14 +142,6 @@ function remove(storeName, id) {
   });
 }
 
-function clearStore(storeName) {
-  return new Promise((resolve, reject) => {
-    const request = tx(storeName, 'readwrite').clear();
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
-}
-
 function getSetting(key) {
   return new Promise((resolve, reject) => {
     const request = tx('settings').get(key);
@@ -740,13 +732,23 @@ function backupPayload() {
 }
 
 async function importBackupPayload(payload) {
-  if (!Array.isArray(payload.tasks) || !Array.isArray(payload.plans) || !Array.isArray(payload.logs)) {
+  if (!Array.isArray(payload?.tasks) || !Array.isArray(payload?.plans) || !Array.isArray(payload?.logs)) {
     throw new Error('Файл не схожий на бекап цього застосунку.');
   }
-  await Promise.all(['tasks', 'plans', 'logs'].map(clearStore));
-  for (const task of payload.tasks) await put('tasks', task);
-  for (const plan of payload.plans) await put('plans', plan);
-  for (const log of payload.logs) await put('logs', log);
+  await new Promise((resolve, reject) => {
+    const transaction = db.transaction(['tasks', 'plans', 'logs'], 'readwrite');
+    transaction.oncomplete = resolve;
+    transaction.onabort = () => reject(transaction.error || new Error('Не вдалося імпортувати бекап.'));
+    try {
+      for (const storeName of ['tasks', 'plans', 'logs']) transaction.objectStore(storeName).clear();
+      for (const task of payload.tasks) transaction.objectStore('tasks').put(task);
+      for (const plan of payload.plans) transaction.objectStore('plans').put(plan);
+      for (const log of payload.logs) transaction.objectStore('logs').put(log);
+    } catch (error) {
+      transaction.abort();
+      reject(error);
+    }
+  });
   await refresh();
 }
 

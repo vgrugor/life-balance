@@ -57,14 +57,6 @@ function put(db, storeName, value) {
   });
 }
 
-function clearStore(db, storeName) {
-  return new Promise((resolve, reject) => {
-    const request = db.transaction(storeName, 'readwrite').objectStore(storeName).clear();
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
-}
-
 async function getSheetsSettingsFromForm() {
   const db = await openDb();
   const url = normalizeSheetsUrl($('#sheetsAppUrl')?.value.trim() || '');
@@ -96,11 +88,24 @@ async function importBackupPayload(payload) {
     throw new Error('Backup не схожий на дані цього застосунку');
   }
   const db = await openDb();
-  await Promise.all(STORE_NAMES.map((storeName) => clearStore(db, storeName)));
-  for (const task of payload.tasks) await put(db, 'tasks', task);
-  for (const plan of payload.plans) await put(db, 'plans', plan);
-  for (const log of payload.logs) await put(db, 'logs', log);
-  db.close();
+  try {
+    await new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAMES, 'readwrite');
+      transaction.oncomplete = resolve;
+      transaction.onabort = () => reject(transaction.error || new Error('Не вдалося імпортувати бекап.'));
+      try {
+        for (const storeName of STORE_NAMES) transaction.objectStore(storeName).clear();
+        for (const task of payload.tasks) transaction.objectStore('tasks').put(task);
+        for (const plan of payload.plans) transaction.objectStore('plans').put(plan);
+        for (const log of payload.logs) transaction.objectStore('logs').put(log);
+      } catch (error) {
+        transaction.abort();
+        reject(error);
+      }
+    });
+  } finally {
+    db.close();
+  }
 }
 
 function fetchSheetsBackupJsonp(url, key) {

@@ -6,9 +6,15 @@
   "scripts": {
     "dev": "node scripts/dev-server.mjs",
     "build": "node scripts/build.mjs",
-    "preview": "node scripts/dev-server.mjs dist 4173"
+    "preview": "node scripts/dev-server.mjs dist 4173",
+    "test:e2e": "playwright test",
+    "test:apps-script": "node --test tests/apps-script.test.mjs",
+    "test": "node --test tests/apps-script.test.mjs && playwright test"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
   }
 }

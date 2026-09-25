@@ -56,6 +56,20 @@ npm run build
 BASE_PATH=/repo-name/ npm run build
 ```
 
+## Браузерні тести
+
+Тести перевіряють створення справи, планування, зміну порядку, виконання та збереження стану після перезавантаження сторінки. Також вони покривають повторення, баланс та історію за 3/7/14/30 днів, JSON-бекап, відкат невдалого відновлення і сценарії Google Sheets. Окремо перевіряються збірка з GitHub Pages base path, робота PWA офлайн та оновлення кешу. Тести `apps-script.gs` перевіряють великий бекап і неправильний ключ без живої таблиці; у браузерних тестах Sheets endpoint підмінено.
+
+```bash
+npm install
+npx playwright install chromium
+npm test
+```
+
+Playwright сам запускає локальні сервери для тестів. На комп’ютері з установленим Google Chrome можна запустити їх без завантаження Chromium: `PW_CHANNEL=chrome npm test`. Окремо доступні `npm run test:apps-script` і `npm run test:e2e`.
+
+GitHub Actions запускає `npm test` для кожного pull request, після його оновлення, а також після push у `main` або `master`. У разі помилки браузерного тесту workflow зберігає Playwright trace як артефакт.
+
 ## Деплой на GitHub Pages
 
 Pages URL: https://vgrugor.github.io/life-balance/

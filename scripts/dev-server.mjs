@@ -5,6 +5,9 @@ import path from 'node:path';
 
 const root = path.resolve(process.argv[2] || 'src');
 const port = Number(process.argv[3] || process.env.PORT || 5173);
+const rawBase = process.env.BASE_PATH || '/';
+const prefixedBase = rawBase.startsWith('/') ? rawBase : `/${rawBase}`;
+const basePath = prefixedBase.endsWith('/') ? prefixedBase : `${prefixedBase}/`;
 const types = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -16,7 +19,11 @@ const types = {
 
 createServer((req, res) => {
   const url = new URL(req.url || '/', `http://localhost:${port}`);
-  let filePath = path.join(root, decodeURIComponent(url.pathname.replace(/^\/+/, '')));
+  const pathname = decodeURIComponent(url.pathname);
+  const relativePath = pathname.startsWith(basePath)
+    ? pathname.slice(basePath.length)
+    : pathname.replace(/^\/+/, '');
+  let filePath = path.join(root, relativePath);
   if (!existsSync(filePath) || statSync(filePath).isDirectory()) {
     filePath = path.join(root, 'index.html');
   }
@@ -24,7 +31,6 @@ createServer((req, res) => {
   if (['.html', '.js', '.css', '.webmanifest'].includes(path.extname(filePath))) {
     readFile(filePath, 'utf8')
       .then((content) => {
-        const basePath = process.env.BASE_PATH || '/';
         const appVersion = root.endsWith('src') ? `dev-${statSync(filePath).mtimeMs}` : 'preview';
         res.end(content.replaceAll('__BASE_PATH__', basePath).replaceAll('__APP_VERSION__', appVersion));
       })
