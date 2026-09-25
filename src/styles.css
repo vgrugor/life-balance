@@ -278,6 +278,10 @@ button,
   font-weight: 700;
 }
 
+.field[hidden] {
+  display: none;
+}
+
 input,
 select,
 textarea {

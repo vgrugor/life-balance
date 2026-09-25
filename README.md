@@ -12,6 +12,7 @@ This is not a to-do list or a productivity scoring system. It shows how complete
 ## Features
 
 - A task library with creation dates, quadrants, sizes, and recurrence rules, including specific weekdays.
+- An optional date when creating a task, so it is added to the plan as soon as the task is saved.
 - Task library filtering by quadrant.
 - Planning for a selected date, with tomorrow as the default.
 - Recurring tasks appear as planning suggestions instead of being added automatically.

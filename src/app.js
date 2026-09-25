@@ -227,6 +227,13 @@ function planOrder(item) {
   return Number.isFinite(item.plan?.order) ? item.plan.order : new Date(item.plan?.createdAt || 0).getTime();
 }
 
+function nextPlanOrder(date, quadrant) {
+  const siblingOrders = plannedItemsFor(date)
+    .filter((item) => item.task.quadrant === quadrant)
+    .map(planOrder);
+  return siblingOrders.length ? Math.max(...siblingOrders) + 1 : 0;
+}
+
 function sizeWeight(size) {
   return SIZE_WEIGHTS[size] || 1;
 }
@@ -619,6 +626,7 @@ async function saveTask(event) {
   event.preventDefault();
   const existingId = $('#taskId').value;
   const existing = existingId ? taskById(existingId) : null;
+  const planDate = existingId ? '' : $('#taskPlanDate').value;
   const now = new Date().toISOString();
   const repeat = $('#taskRepeat').value;
   const repeatDays = repeat === 'weekdays' && !selectedRepeatDays().length
@@ -642,7 +650,28 @@ async function saveTask(event) {
     hiddenUntil,
     updatedAt: now
   };
-  await put('tasks', task);
+  if (planDate) {
+    await new Promise((resolve, reject) => {
+      const transaction = db.transaction(['tasks', 'plans'], 'readwrite');
+      transaction.oncomplete = resolve;
+      transaction.onabort = () => reject(transaction.error || new Error('Не вдалося зберегти справу та план.'));
+      try {
+        transaction.objectStore('tasks').put(task);
+        transaction.objectStore('plans').put({
+          id: uid('plan'),
+          taskId: task.id,
+          date: planDate,
+          order: nextPlanOrder(planDate, task.quadrant),
+          createdAt: now
+        });
+      } catch (error) {
+        transaction.abort();
+        reject(error);
+      }
+    });
+  } else {
+    await put('tasks', task);
+  }
   resetTaskForm();
   await refresh();
 }
@@ -651,6 +680,8 @@ function resetTaskForm() {
   $('#taskForm').reset();
   $('#taskId').value = '';
   $('#taskCreatedAt').value = toDateTimeLocalValue();
+  $('#taskPlanDate').value = '';
+  $('#taskPlanDateField').hidden = false;
   $('#taskPostponed').checked = false;
   updateWeekdayPicker();
 }
@@ -660,10 +691,7 @@ async function addPlanFor(taskId, date) {
   const exists = state.plans.some((plan) => plan.taskId === taskId && plan.date === date);
   if (exists) return;
   const task = taskById(taskId);
-  const siblingOrders = plannedItemsFor(date)
-    .filter((item) => item.task.quadrant === task?.quadrant)
-    .map(planOrder);
-  const order = siblingOrders.length ? Math.max(...siblingOrders) + 1 : 0;
+  const order = nextPlanOrder(date, task?.quadrant);
   await put('plans', { id: uid('plan'), taskId, date, order, createdAt: new Date().toISOString() });
 }
 
@@ -1030,6 +1058,8 @@ function bindEvents() {
       $('#taskId').value = task.id;
       $('#taskTitle').value = task.title;
       $('#taskCreatedAt').value = toDateTimeLocalValue(task.createdAt);
+      $('#taskPlanDate').value = '';
+      $('#taskPlanDateField').hidden = true;
       $('#taskPostponed').checked = isPostponed(task);
       $('#taskQuadrant').value = task.quadrant;
       $('#taskSize').value = task.size;

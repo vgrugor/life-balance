@@ -24,6 +24,58 @@ test('a new task appears in the quadrant library and survives a reload', async (
   await expect(page.locator('#taskList .quadrant-accordion .card').filter({ hasText: 'Morning walk' })).toHaveCount(1);
 });
 
+test('a new task is planned for the optional date when saved', async ({ page }) => {
+  const date = '2030-05-17';
+  await page.goto('/');
+  await page.locator('[data-view="tasks"]').click();
+  await expect(page.locator('#taskPlanDateField')).toBeVisible();
+  await page.locator('#taskTitle').fill('Plan on save');
+  await page.locator('#taskPlanDate').fill(date);
+  await page.locator('#taskForm button[type="submit"]').click();
+  await expect(page.locator('#taskPlanDate')).toHaveValue('');
+  await expect(page.locator('#taskList .card').filter({ hasText: 'Plan on save' })).toBeVisible();
+
+  await page.locator('[data-view="plan"]').click();
+  await page.locator('#planDate').fill(date);
+  await expect(page.locator('#planList .plan-card .title')).toHaveText('Plan on save');
+
+  await page.reload();
+  await page.locator('[data-view="plan"]').click();
+  await page.locator('#planDate').fill(date);
+  await expect(page.locator('#planList .plan-card .title')).toHaveText('Plan on save');
+});
+
+test('leaving the optional date blank saves only the task', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('[data-view="tasks"]').click();
+  await expect(page.locator('#taskPlanDate')).toHaveValue('');
+  await createTask(page, 'Keep unplanned');
+
+  await page.locator('[data-view="plan"]').click();
+  await expect(page.locator('#planList .plan-card')).toHaveCount(0);
+  await expect(page.locator('#planTaskSelect')).toContainText('Keep unplanned');
+});
+
+test('editing a task does not add another plan', async ({ page }) => {
+  const date = '2030-05-17';
+  await page.goto('/');
+  await page.locator('[data-view="tasks"]').click();
+  await page.locator('#taskTitle').fill('Original task');
+  await page.locator('#taskPlanDate').fill(date);
+  await page.locator('#taskForm button[type="submit"]').click();
+  const card = page.locator('#taskList .card').filter({ hasText: 'Original task' });
+  await expect(card).toBeVisible();
+
+  await card.locator('[data-edit-task]').click();
+  await expect(page.locator('#taskPlanDateField')).toBeHidden();
+  await page.locator('#taskTitle').fill('Edited task');
+  await page.locator('#taskForm button[type="submit"]').click();
+  await expect(page.locator('#taskPlanDateField')).toBeVisible();
+  await page.locator('[data-view="plan"]').click();
+  await page.locator('#planDate').fill(date);
+  await expect(page.locator('#planList .plan-card .title')).toHaveText('Edited task');
+});
+
 test('planned order and completion persist after a reload', async ({ page }) => {
   await page.goto('/');
   await page.locator('[data-view="tasks"]').click();
