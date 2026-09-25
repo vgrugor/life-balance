@@ -20,6 +20,11 @@ const assets = [
   'icons/icon.svg'
 ];
 const offlineAssets = assets.filter((asset) => asset !== 'sw.js');
+const versionedAssets = new Set(['styles.css', 'app.js', 'sheets-guard.js', 'base-accordions.js']);
+
+function assetUrl(asset, version) {
+  return `${basePath}${asset}${versionedAssets.has(asset) ? `?v=${version}` : ''}`;
+}
 
 async function availablePort() {
   const server = createServer();
@@ -58,8 +63,9 @@ test('GitHub Pages build contains the expected files and uses its base path', as
   const index = await readFile(path.join(dist, 'index.html'), 'utf8');
   const manifest = JSON.parse(await readFile(path.join(dist, 'manifest.webmanifest'), 'utf8'));
   const serviceWorker = await readFile(path.join(dist, 'sw.js'), 'utf8');
-  expect(index).toContain(`src="${basePath}app.js"`);
-  expect(index).toContain(`href="${basePath}styles.css"`);
+  const version = serviceWorker.match(/const CACHE_NAME = 'balance-quadrants-([^']+)'/)[1];
+  expect(index).toContain(`src="${assetUrl('app.js', version)}"`);
+  expect(index).toContain(`href="${assetUrl('styles.css', version)}"`);
   expect(manifest.start_url).toBe(basePath);
   expect(manifest.scope).toBe(basePath);
   expect(manifest.icons[0].src).toBe(`${basePath}icons/icon.svg`);
@@ -70,13 +76,14 @@ test('GitHub Pages build contains the expected files and uses its base path', as
 });
 
 test('built app and saved tasks remain available offline', async ({ page, context }) => {
+  const version = (await cacheNameFor(path.resolve('.'))).replace('balance-quadrants-', '');
   await page.goto(previewUrl);
   await expect(page.locator('#taskQuadrant option')).toHaveCount(4);
   await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
 
   const cached = await page.evaluate(async (paths) => Promise.all(paths.map(async (asset) =>
     Boolean(await caches.match(new URL(asset, location.origin).href))
-  )), offlineAssets.map((asset) => `${basePath}${asset}`));
+  )), offlineAssets.map((asset) => assetUrl(asset, version)));
   expect(cached).toEqual(offlineAssets.map(() => true));
 
   await page.locator('[data-view="tasks"]').click();
@@ -126,14 +133,68 @@ test('an updated service worker replaces the old cache and serves new assets off
 
     await page.evaluate(async () => (await navigator.serviceWorker.getRegistration()).update());
     await expect.poll(() => page.evaluate(() => caches.keys())).toEqual([newCache]);
-    await expect.poll(() => page.evaluate(async () => {
-      const response = await caches.match(`${location.origin}/life-balance/styles.css`);
+    const newVersion = newCache.replace('balance-quadrants-', '');
+    await expect.poll(() => page.evaluate(async (version) => {
+      const response = await caches.match(`${location.origin}/life-balance/styles.css?v=${version}`);
       return response && (await response.text()).includes('updated-pwa-asset');
-    })).toBe(true);
+    }, newVersion)).toBe(true);
 
     await context.setOffline(true);
     await page.reload();
     await expect(page.locator('#taskQuadrant option')).toHaveCount(4);
+  } finally {
+    if (server?.exitCode === null) {
+      const exited = once(server, 'exit');
+      server.kill();
+      await exited;
+    }
+    await rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test('new HTML loads current task logic while an older worker controls the page', async ({ page }) => {
+  const temporaryRoot = await mkdtemp(path.join(tmpdir(), 'life-balance-mixed-pwa-'));
+  let server;
+  try {
+    await cp(path.resolve('src'), path.join(temporaryRoot, 'src'), { recursive: true });
+    const appPath = path.join(temporaryRoot, 'src', 'app.js');
+    const currentApp = await readFile(appPath, 'utf8');
+    const oldApp = currentApp.replace("const planDate = existingId ? '' : $('#taskPlanDate').value;", "const planDate = '';");
+    expect(oldApp).not.toBe(currentApp);
+    await writeFile(appPath, oldApp);
+    const build = () => execFileSync(process.execPath, [path.resolve('scripts/build.mjs')], {
+      cwd: temporaryRoot,
+      env: { ...process.env, BASE_PATH: basePath }
+    });
+    build();
+    const oldWorker = await readFile(path.join(temporaryRoot, 'dist', 'sw.js'), 'utf8');
+    const port = await availablePort();
+    const url = `http://127.0.0.1:${port}${basePath}`;
+    server = spawn(process.execPath, [path.resolve('scripts/dev-server.mjs'), path.join(temporaryRoot, 'dist'), String(port)], {
+      env: { ...process.env, BASE_PATH: basePath },
+      stdio: 'ignore'
+    });
+    await expect.poll(async () => {
+      try { return (await fetch(url)).status; } catch { return 0; }
+    }).toBe(200);
+
+    await page.goto(url);
+    await expect(page.locator('#taskQuadrant option')).toHaveCount(4);
+    await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
+    const date = await page.locator('#planDate').inputValue();
+
+    await writeFile(appPath, currentApp);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    build();
+    await writeFile(path.join(temporaryRoot, 'dist', 'sw.js'), oldWorker);
+
+    await page.reload();
+    await page.locator('[data-view="tasks"]').click();
+    await page.locator('#taskTitle').fill('Planned after update');
+    await page.locator('#taskPlanDate').fill(date);
+    await page.locator('#taskForm button[type="submit"]').click();
+    await page.locator('[data-view="plan"]').click();
+    await expect(page.locator('#planList .plan-card .title')).toHaveText('Planned after update');
   } finally {
     if (server?.exitCode === null) {
       const exited = once(server, 'exit');

@@ -39,6 +39,10 @@ test('a new task is planned for the optional date when saved', async ({ page }) 
   await page.locator('#planDate').fill(date);
   await expect(page.locator('#planList .plan-card .title')).toHaveText('Plan on save');
 
+  await page.locator('[data-view="today"]').click();
+  await page.locator('#todayDatePicker').fill(date);
+  await expect(page.locator('#todayList .today-card .title')).toHaveText('Plan on save');
+
   await page.reload();
   await page.locator('[data-view="plan"]').click();
   await page.locator('#planDate').fill(date);

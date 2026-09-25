@@ -3,10 +3,10 @@ const BASE_PATH = '__BASE_PATH__';
 const ASSETS = [
   BASE_PATH,
   `${BASE_PATH}index.html`,
-  `${BASE_PATH}styles.css`,
-  `${BASE_PATH}app.js`,
-  `${BASE_PATH}sheets-guard.js`,
-  `${BASE_PATH}base-accordions.js`,
+  `${BASE_PATH}styles.css?v=__APP_VERSION__`,
+  `${BASE_PATH}app.js?v=__APP_VERSION__`,
+  `${BASE_PATH}sheets-guard.js?v=__APP_VERSION__`,
+  `${BASE_PATH}base-accordions.js?v=__APP_VERSION__`,
   `${BASE_PATH}manifest.webmanifest`,
   `${BASE_PATH}icons/icon.svg`
 ];
