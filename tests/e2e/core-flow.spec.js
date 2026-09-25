@@ -76,6 +76,22 @@ test('editing a task does not add another plan', async ({ page }) => {
   await expect(page.locator('#planList .plan-card .title')).toHaveText('Edited task');
 });
 
+test('editing a task scrolls back to the form', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 667 });
+  await page.goto('/');
+  await page.locator('[data-view="tasks"]').click();
+  await createTask(page, 'Task to edit');
+  await createTask(page, 'Another task');
+
+  await page.locator('#taskList .card').filter({ hasText: 'Task to edit' }).locator('[data-edit-task]').click();
+
+  await expect(page.locator('#taskTitle')).toHaveValue('Task to edit');
+  const formTop = await page.locator('#taskForm').evaluate((form) => form.getBoundingClientRect().top);
+  const tabsBottom = await page.locator('.tabs').evaluate((tabs) => tabs.getBoundingClientRect().bottom);
+  expect(formTop).toBeGreaterThanOrEqual(tabsBottom);
+  expect(formTop).toBeLessThan(tabsBottom + 30);
+});
+
 test('planned order and completion persist after a reload', async ({ page }) => {
   await page.goto('/');
   await page.locator('[data-view="tasks"]').click();

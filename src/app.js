@@ -1069,6 +1069,7 @@ function bindEvents() {
       updateWeekdayPicker();
       state.currentView = 'tasks';
       renderTabs();
+      $('#taskForm').scrollIntoView({ block: 'start' });
     }
     if (postponeTask) {
       const task = taskById(postponeTask.dataset.postponeTask);

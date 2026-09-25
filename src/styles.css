@@ -134,6 +134,10 @@ h3 {
   backdrop-filter: blur(18px);
 }
 
+#taskForm {
+  scroll-margin-top: 70px;
+}
+
 .tab,
 .chip,
 button,
