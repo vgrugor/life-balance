@@ -10,7 +10,7 @@ This project is a static, mobile-first PWA without a framework or application se
 - `src/app.js` contains the main logic, IndexedDB access, planning, history, import, and export.
 - `src/base-accordions.js` renders the task library by quadrant. It shares the DOM and IndexedDB with the main app.
 - `src/sheets-guard.js` handles the Google Sheets buttons and intercepts their events before the handlers in `app.js`. Account for both files when changing backup behavior.
-- `src/sw.js` manages the offline cache. `scripts/build.mjs` builds `dist/` and replaces `__BASE_PATH__` and `__APP_VERSION__`; `scripts/dev-server.mjs` serves the app locally.
+- `src/sw.js` manages the offline cache. `scripts/build.mjs` builds `dist/` and replaces `__BASE_PATH__` and `__APP_VERSION__`; `scripts/dev-server.mjs` serves the app locally. Keep the versioned CSS and JavaScript URLs in `src/index.html` aligned with the precache URLs in `src/sw.js`. The version query prevents an older service worker from serving old JavaScript with new HTML.
 - `.github/workflows/pages.yml` builds and publishes GitHub Pages using the repository base path.
 
 ## Data and compatibility
@@ -19,6 +19,8 @@ This project is a static, mobile-first PWA without a framework or application se
 - JSON backups contain `schemaVersion`, `tasks`, `plans`, and `logs`. `settings` (the Web App URL and API key) remain local and are not exported. Coordinate format changes across JSON import, Google Sheets backup/restore, and `apps-script.gs`.
 - Recurring tasks are suggestions. A `plans` record is created only after a user action. Completions are stored separately in `logs`.
 - Plan dates use local `YYYY-MM-DD` values, while timestamps use ISO format. Preserve this distinction in calendar and history logic.
+- Creating a task with an optional plan date writes the task and its plan in one IndexedDB transaction. Both the Today and Tomorrow views read plans for their selected dates; cover both views when changing this flow.
+- Sheets writes first use an opaque `no-cors` POST, then verify the saved timestamp through a JSONP GET. If verification fails, `src/sheets-guard.js` retries with a form POST whose `payload` field is parsed by `apps-script.gs`. Keep both POST formats compatible, and deploy a new Apps Script Web App version after changing `apps-script.gs`.
 - Do not commit a real API key: `BACKUP_KEY` in `apps-script.gs` is a placeholder for a user's own deployment.
 
 ## Verification
